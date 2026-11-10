@@ -130,23 +130,50 @@
     }
   };
 
+  // ===== Nombres en lettres -> chiffres =====
+  const valeurs = {
+    zero: 0, un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9,
+    dix: 10, onze: 11, douze: 12, treize: 13, quatorze: 14, quinze: 15, seize: 16,
+    vingt: 20, vingts: 20, trente: 30, quarante: 40, cinquante: 50, soixante: 60,
+    cent: 100, cents: 100, mille: 1000
+  };
+
+  function lireNombre(texte) {
+    texte = texte.trim();
+    if (/^\d+$/.test(texte)) return parseInt(texte);
+    const mots = texte.split(/[\s-]+/).filter(m => m && m !== "et");
+    if (!mots.length) return null;
+    let total = 0, cur = 0;
+    for (const m of mots) {
+      const v = valeurs[m];
+      if (v === undefined) return null;
+      if (v === 1000) { total += (cur || 1) * 1000; cur = 0; }
+      else if (v === 100) { cur = (cur || 1) * 100; }
+      else if (v === 20 && cur % 100 === 4) { cur += 76; }   // quatre-vingt
+      else { cur += v; }
+    }
+    return total + cur;
+  }
+
   // ===== Commandes vocales =====
-  const mots = { un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, vingt: 20 };
   const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
   const boutonMicro = document.getElementById("micro");
   const entendu = document.getElementById("entendu");
   let reco = null, ecoute = false;
 
   function analyser(texte) {
-    let t = texte.toLowerCase().replace(/\+/g, " plus ").replace(/-/g, " moins ");
-    // Seulement "plus/moins + nombre + coffre(s)"
-    const regex = /(plus|moins)\s+(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|vingt)\s+coffres?/g;
-    let m, trouve = false;
+    let t = texte.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/\+\s*(?=\d)/g, " plus ")
+      .replace(/(^|\s)-\s*(?=\d)/g, " moins ");
+    // "plus/moins" + nombre (chiffres ou lettres, jusqu'à 5 mots) + "coffre(s)"
+    const regex = /(plus|moins)\s+([a-z0-9]+(?:[\s-]+[a-z0-9]+){0,4}?)\s+coffres?/g;
+    let m;
     while ((m = regex.exec(t)) !== null) {
-      const n = isNaN(m[2]) ? mots[m[2]] : parseInt(m[2]);
+      const n = lireNombre(m[2]);
+      if (n === null || n === 0) continue;
       ajouter(m[1] === "plus" ? n : -n);
-      entendu.textContent = "✅ " + m[0];
-      trouve = true;
+      entendu.textContent = "✅ " + (m[1] === "plus" ? "+" : "−") + n + " coffre" + (n > 1 ? "s" : "");
     }
     if (/nouvelle partie/.test(t)) {
       nouvellePartie();
@@ -187,7 +214,7 @@
     ecoute = true;
     boutonMicro.classList.add("actif");
     boutonMicro.textContent = "🔴 J'écoute… (appuie pour arrêter)";
-    entendu.textContent = "Dis « plus un coffre »";
+    entendu.textContent = "Dis « plus 18 coffres »";
     demarrer();
   };
 
