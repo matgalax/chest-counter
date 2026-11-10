@@ -2,13 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coffres">
 <title>Compteur de coffres</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; -webkit-touch-callout: none; }
   body {
     font-family: -apple-system, sans-serif;
     background: linear-gradient(160deg, #1a1040, #3b1d7a);
@@ -25,12 +25,13 @@
     font-size: 30px; font-weight: 800; color: #3b1d7a;
     box-shadow: 0 10px 30px rgba(0,0,0,.4);
   }
-  #plus:active { transform: scale(.94); }
+  #plus:active, .petit:active { transform: scale(.94); }
   .ligne { display: flex; gap: 12px; margin-top: 25px; }
   .petit {
     padding: 14px 20px; border-radius: 14px; border: none;
     font-size: 16px; font-weight: 600; color: #fff; background: rgba(255,255,255,.15);
   }
+  .ajout { background: #e0a800; color: #3b1d7a; font-weight: 800; }
   #nouvelle { background: #2ecc71; }
   .stats { display: flex; gap: 25px; margin-top: 30px; text-align: center; }
   .stats b { display: block; font-size: 26px; color: #ffd84d; }
@@ -47,6 +48,12 @@
   <div id="partie">Partie n°1</div>
   <div id="compteur">0</div>
   <button id="plus">+1 COFFRE</button>
+
+  <div class="ligne">
+    <button class="petit ajout" data-n="5">+5</button>
+    <button class="petit ajout" data-n="10">+10</button>
+    <button class="petit ajout" data-n="20">+20</button>
+  </div>
 
   <div class="ligne">
     <button class="petit" id="moins">−1</button>
@@ -80,11 +87,17 @@
     ).join("");
   }
 
-  document.getElementById("plus").onclick = () => {
-    data.actuel++;
+  function ajouter(n) {
+    data.actuel += n;
     if (navigator.vibrate) navigator.vibrate(30);
     sauver(); afficher();
-  };
+  }
+
+  document.getElementById("plus").onclick = () => ajouter(1);
+
+  document.querySelectorAll(".ajout").forEach(b => {
+    b.onclick = () => ajouter(parseInt(b.dataset.n));
+  });
 
   document.getElementById("moins").onclick = () => {
     if (data.actuel > 0) data.actuel--;
