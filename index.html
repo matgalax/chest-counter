@@ -18,7 +18,8 @@
   }
   h1 { font-size: 22px; opacity: .85; }
   #partie { margin-top: 6px; opacity: .6; }
-  #compteur { font-size: 120px; font-weight: 800; margin: 20px 0; color: #ffd84d; }
+  #compteur { font-size: 120px; font-weight: 800; margin: 20px 0; color: #ffd84d; transition: transform .15s; }
+  #compteur.pop { transform: scale(1.2); }
   #plus {
     width: 220px; height: 220px; border-radius: 50%; border: none;
     background: radial-gradient(circle, #ffd84d, #e0a800);
@@ -33,6 +34,9 @@
   }
   .ajout { background: #e0a800; color: #3b1d7a; font-weight: 800; }
   #nouvelle { background: #2ecc71; }
+  #micro { margin-top: 25px; padding: 14px 24px; border-radius: 30px; border: none; font-size: 17px; font-weight: 700; color: #fff; background: rgba(255,255,255,.15); }
+  #micro.actif { background: #e74c3c; }
+  #entendu { margin-top: 10px; font-size: 14px; opacity: .7; min-height: 18px; text-align: center; }
   .stats { display: flex; gap: 25px; margin-top: 30px; text-align: center; }
   .stats b { display: block; font-size: 26px; color: #ffd84d; }
   #historique { margin-top: 25px; width: 100%; max-width: 360px; font-size: 15px; }
@@ -59,6 +63,9 @@
     <button class="petit" id="moins">−1</button>
     <button class="petit" id="nouvelle">Nouvelle partie ✓</button>
   </div>
+
+  <button id="micro">🎤 Activer la voix</button>
+  <div id="entendu"></div>
 
   <div class="stats">
     <div><b id="moyenne">0</b>Moyenne</div>
@@ -87,24 +94,19 @@
     ).join("");
   }
 
-  function ajouter(n) {
-    data.actuel += n;
-    if (navigator.vibrate) navigator.vibrate(30);
-    sauver(); afficher();
+  function pop() {
+    const c = document.getElementById("compteur");
+    c.classList.add("pop");
+    setTimeout(() => c.classList.remove("pop"), 150);
   }
 
-  document.getElementById("plus").onclick = () => ajouter(1);
+  function ajouter(n) {
+    data.actuel = Math.max(0, data.actuel + n);
+    if (navigator.vibrate) navigator.vibrate(30);
+    sauver(); afficher(); pop();
+  }
 
-  document.querySelectorAll(".ajout").forEach(b => {
-    b.onclick = () => ajouter(parseInt(b.dataset.n));
-  });
-
-  document.getElementById("moins").onclick = () => {
-    if (data.actuel > 0) data.actuel--;
-    sauver(); afficher();
-  };
-
-  document.getElementById("nouvelle").onclick = () => {
+  function nouvellePartie() {
     const d = new Date();
     data.parties.push({
       coffres: data.actuel,
@@ -112,13 +114,81 @@
     });
     data.actuel = 0;
     sauver(); afficher();
-  };
+  }
+
+  document.getElementById("plus").onclick = () => ajouter(1);
+  document.querySelectorAll(".ajout").forEach(b => {
+    b.onclick = () => ajouter(parseInt(b.dataset.n));
+  });
+  document.getElementById("moins").onclick = () => ajouter(-1);
+  document.getElementById("nouvelle").onclick = nouvellePartie;
 
   document.getElementById("reset").onclick = () => {
     if (confirm("Effacer toutes les parties ?")) {
       data = { actuel: 0, parties: [] };
       sauver(); afficher();
     }
+  };
+
+  // ===== Commandes vocales =====
+  const mots = { un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, vingt: 20 };
+  const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const boutonMicro = document.getElementById("micro");
+  const entendu = document.getElementById("entendu");
+  let reco = null, ecoute = false;
+
+  function analyser(texte) {
+    let t = texte.toLowerCase().replace(/\+/g, " plus ").replace(/-/g, " moins ");
+    // Seulement "plus/moins + nombre + coffre(s)"
+    const regex = /(plus|moins)\s+(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|vingt)\s+coffres?/g;
+    let m, trouve = false;
+    while ((m = regex.exec(t)) !== null) {
+      const n = isNaN(m[2]) ? mots[m[2]] : parseInt(m[2]);
+      ajouter(m[1] === "plus" ? n : -n);
+      entendu.textContent = "✅ " + m[0];
+      trouve = true;
+    }
+    if (/nouvelle partie/.test(t)) {
+      nouvellePartie();
+      entendu.textContent = "✅ nouvelle partie";
+    }
+  }
+
+  function demarrer() {
+    reco = new Reco();
+    reco.lang = "fr-FR";
+    reco.continuous = true;
+    reco.interimResults = false;
+    reco.onresult = e => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) analyser(e.results[i][0].transcript);
+      }
+    };
+    reco.onend = () => { if (ecoute) try { reco.start(); } catch (_) {} };
+    reco.onerror = e => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        entendu.textContent = "❌ Micro refusé : autorise-le dans les réglages du navigateur";
+        arreter();
+      }
+    };
+    reco.start();
+  }
+
+  function arreter() {
+    ecoute = false;
+    if (reco) reco.stop();
+    boutonMicro.classList.remove("actif");
+    boutonMicro.textContent = "🎤 Activer la voix";
+  }
+
+  boutonMicro.onclick = () => {
+    if (!Reco) { entendu.textContent = "❌ La voix ne marche pas sur ce navigateur"; return; }
+    if (ecoute) { arreter(); return; }
+    ecoute = true;
+    boutonMicro.classList.add("actif");
+    boutonMicro.textContent = "🔴 J'écoute… (appuie pour arrêter)";
+    entendu.textContent = "Dis « plus un coffre »";
+    demarrer();
   };
 
   afficher();
