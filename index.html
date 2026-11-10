@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coffres">
+<title>Compteur de coffres</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, sans-serif;
+    background: linear-gradient(160deg, #1a1040, #3b1d7a);
+    color: #fff; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 50px 20px 30px; user-select: none;
+  }
+  h1 { font-size: 22px; opacity: .85; }
+  #partie { margin-top: 6px; opacity: .6; }
+  #compteur { font-size: 120px; font-weight: 800; margin: 20px 0; color: #ffd84d; }
+  #plus {
+    width: 220px; height: 220px; border-radius: 50%; border: none;
+    background: radial-gradient(circle, #ffd84d, #e0a800);
+    font-size: 30px; font-weight: 800; color: #3b1d7a;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  }
+  #plus:active { transform: scale(.94); }
+  .ligne { display: flex; gap: 12px; margin-top: 25px; }
+  .petit {
+    padding: 14px 20px; border-radius: 14px; border: none;
+    font-size: 16px; font-weight: 600; color: #fff; background: rgba(255,255,255,.15);
+  }
+  #nouvelle { background: #2ecc71; }
+  .stats { display: flex; gap: 25px; margin-top: 30px; text-align: center; }
+  .stats b { display: block; font-size: 26px; color: #ffd84d; }
+  #historique { margin-top: 25px; width: 100%; max-width: 360px; font-size: 15px; }
+  #historique div {
+    display: flex; justify-content: space-between;
+    padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  #reset { margin-top: 25px; background: none; border: none; color: #ff7b7b; font-size: 14px; }
+</style>
+</head>
+<body>
+  <h1>🧰 Compteur de coffres</h1>
+  <div id="partie">Partie n°1</div>
+  <div id="compteur">0</div>
+  <button id="plus">+1 COFFRE</button>
+
+  <div class="ligne">
+    <button class="petit" id="moins">−1</button>
+    <button class="petit" id="nouvelle">Nouvelle partie ✓</button>
+  </div>
+
+  <div class="stats">
+    <div><b id="moyenne">0</b>Moyenne</div>
+    <div><b id="record">0</b>Record</div>
+    <div><b id="total">0</b>Total</div>
+  </div>
+
+  <div id="historique"></div>
+  <button id="reset">Tout effacer</button>
+
+<script>
+  let data = JSON.parse(localStorage.getItem("coffres")) || { actuel: 0, parties: [] };
+
+  function sauver() { localStorage.setItem("coffres", JSON.stringify(data)); }
+
+  function afficher() {
+    const p = data.parties;
+    document.getElementById("compteur").textContent = data.actuel;
+    document.getElementById("partie").textContent = "Partie n°" + (p.length + 1);
+    const total = p.reduce((s, x) => s + x.coffres, 0);
+    document.getElementById("total").textContent = total;
+    document.getElementById("record").textContent = p.length ? Math.max(...p.map(x => x.coffres)) : 0;
+    document.getElementById("moyenne").textContent = p.length ? (total / p.length).toFixed(1) : 0;
+    document.getElementById("historique").innerHTML = p.slice().reverse().slice(0, 20).map((x, i) =>
+      `<div><span>Partie ${p.length - i} · ${x.date}</span><span>${x.coffres} 🧰</span></div>`
+    ).join("");
+  }
+
+  document.getElementById("plus").onclick = () => {
+    data.actuel++;
+    if (navigator.vibrate) navigator.vibrate(30);
+    sauver(); afficher();
+  };
+
+  document.getElementById("moins").onclick = () => {
+    if (data.actuel > 0) data.actuel--;
+    sauver(); afficher();
+  };
+
+  document.getElementById("nouvelle").onclick = () => {
+    const d = new Date();
+    data.parties.push({
+      coffres: data.actuel,
+      date: d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    });
+    data.actuel = 0;
+    sauver(); afficher();
+  };
+
+  document.getElementById("reset").onclick = () => {
+    if (confirm("Effacer toutes les parties ?")) {
+      data = { actuel: 0, parties: [] };
+      sauver(); afficher();
+    }
+  };
+
+  afficher();
+</script>
+</body>
+</html>
