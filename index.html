@@ -2,221 +2,361 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coffres">
 <title>Compteur de coffres</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; -webkit-touch-callout: none; }
-  body {
-    font-family: -apple-system, sans-serif;
-    background: linear-gradient(160deg, #1a1040, #3b1d7a);
-    color: #fff; min-height: 100vh;
-    display: flex; flex-direction: column; align-items: center;
-    padding: 50px 20px 30px; user-select: none;
-  }
-  h1 { font-size: 22px; opacity: .85; }
-  #partie { margin-top: 6px; opacity: .6; }
-  #compteur { font-size: 120px; font-weight: 800; margin: 20px 0; color: #ffd84d; transition: transform .15s; }
-  #compteur.pop { transform: scale(1.2); }
-  #plus {
-    width: 220px; height: 220px; border-radius: 50%; border: none;
-    background: radial-gradient(circle, #ffd84d, #e0a800);
-    font-size: 30px; font-weight: 800; color: #3b1d7a;
-    box-shadow: 0 10px 30px rgba(0,0,0,.4);
-  }
-  #plus:active, .petit:active { transform: scale(.94); }
-  .ligne { display: flex; gap: 12px; margin-top: 25px; }
-  .petit {
-    padding: 14px 20px; border-radius: 14px; border: none;
-    font-size: 16px; font-weight: 600; color: #fff; background: rgba(255,255,255,.15);
-  }
-  .ajout { background: #e0a800; color: #3b1d7a; font-weight: 800; }
-  #nouvelle { background: #2ecc71; }
-  #micro { margin-top: 25px; padding: 14px 24px; border-radius: 30px; border: none; font-size: 17px; font-weight: 700; color: #fff; background: rgba(255,255,255,.15); }
-  #micro.actif { background: #e74c3c; }
-  #entendu { margin-top: 10px; font-size: 14px; opacity: .7; min-height: 18px; text-align: center; }
-  .stats { display: flex; gap: 25px; margin-top: 30px; text-align: center; }
-  .stats b { display: block; font-size: 26px; color: #ffd84d; }
-  #historique { margin-top: 25px; width: 100%; max-width: 360px; font-size: 15px; }
-  #historique div {
-    display: flex; justify-content: space-between;
-    padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.1);
-  }
-  #reset { margin-top: 25px; background: none; border: none; color: #ff7b7b; font-size: 14px; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+:root { --fond: #0f1020; --carte: #1b1d36; --or: #ffc832; --violet: #7b5cff; --texte: #f3f3ff; --gris: #9a9cc0; --rouge: #ff5a6e; --vert: #3ddc84; }
+body { background: var(--fond); color: var(--texte); font-family: -apple-system, system-ui, sans-serif; min-height: 100vh; padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 24px); display: flex; justify-content: center; }
+main { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 14px; }
+h1 { text-align: center; font-size: 18px; letter-spacing: 1px; color: var(--gris); text-transform: uppercase; }
+.carte { background: var(--carte); border-radius: 20px; padding: 16px; }
+.chrono { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.temps { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.temps.actif { color: var(--vert); }
+.chrono-btns { display: flex; gap: 8px; }
+.petit { border: none; border-radius: 14px; padding: 12px 16px; font-size: 17px; font-weight: 700; background: #2a2d52; color: var(--texte); }
+.petit.go { background: var(--vert); color: #06210f; }
+.petit.pause { background: var(--or); color: #3a2300; }
+.compte { text-align: center; }
+.compte .nb { font-size: 88px; font-weight: 900; color: var(--or); line-height: 1; font-variant-numeric: tabular-nums; }
+.compte .lbl { color: var(--gris); margin-top: 4px; }
+.plus1 { width: 100%; height: 180px; border: none; border-radius: 28px; background: linear-gradient(160deg, #ffd75a, #ff9f1a); color: #3a2300; font-size: 56px; font-weight: 900; box-shadow: 0 8px 0 #b86a00; }
+.plus1:active { transform: translateY(6px); box-shadow: 0 2px 0 #b86a00; }
+.ligne { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.ligne button { height: 60px; border: none; border-radius: 16px; font-size: 20px; font-weight: 800; background: var(--violet); color: white; }
+.ligne .moins { background: #3a2c45; color: var(--rouge); }
+.voix { width: 100%; height: 56px; border: none; border-radius: 16px; font-size: 18px; font-weight: 700; background: #2a2d52; color: var(--texte); }
+.voix.on { background: var(--rouge); }
+.statut { text-align: center; color: var(--gris); font-size: 14px; min-height: 18px; }
+.nouvelle { width: 100%; height: 56px; border: none; border-radius: 16px; font-size: 18px; font-weight: 800; background: var(--vert); color: #06210f; }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat { background: var(--carte); border-radius: 14px; padding: 12px; text-align: center; }
+.stat b { display: block; font-size: 24px; color: var(--or); }
+.stat span { font-size: 13px; color: var(--gris); }
+.histo h2 { font-size: 15px; color: var(--gris); margin-bottom: 8px; }
+.histo li { list-style: none; display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #2a2d52; font-size: 15px; }
+.histo li:last-child { border: none; }
+.histo li span { color: var(--gris); }
+.vide { color: var(--gris); font-size: 14px; }
+.reset { background: none; border: none; color: var(--rouge); font-size: 14px; padding: 8px; align-self: center; }
+.entete { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.puce { border: none; border-radius: 999px; padding: 8px 14px; font-size: 15px; font-weight: 700; background: var(--carte); color: var(--texte); }
+.filtre { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--carte); border-radius: 14px; padding: 4px; }
+.filtre button { border: none; border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 700; background: none; color: var(--gris); }
+.filtre button.actif { background: var(--violet); color: white; }
+.accueil { position: fixed; inset: 0; z-index: 10; background: var(--fond); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; }
+.accueil.cache { display: none; }
+.accueil h2 { font-size: 28px; font-weight: 900; text-align: center; }
+.accueil p { color: var(--gris); text-align: center; }
+.choix { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
+.choix button { height: 84px; border: 3px solid transparent; border-radius: 22px; font-size: 26px; font-weight: 800; background: var(--carte); color: var(--texte); display: flex; align-items: center; justify-content: center; gap: 14px; }
+.choix button.dernier { border-color: var(--or); }
+.choix button:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
-  <h1>🧰 Compteur de coffres</h1>
-  <div id="partie">Partie n°1</div>
-  <div id="compteur">0</div>
-  <button id="plus">+1 COFFRE</button>
+<div class="accueil" id="accueil">
+  <h2>Tu joues sur quoi ?</h2>
+  <p>Tes stats sont séparées pour chaque plateforme.</p>
+  <div class="choix">
+    <button data-p="pc">🖥️ PC</button>
+    <button data-p="mobile">📱 Mobile</button>
+    <button data-p="console">🎮 Console</button>
+  </div>
+</div>
 
-  <div class="ligne">
-    <button class="petit ajout" data-n="5">+5</button>
-    <button class="petit ajout" data-n="10">+10</button>
-    <button class="petit ajout" data-n="20">+20</button>
+<main>
+  <div class="entete">
+    <h1>Compteur de coffres</h1>
+    <button class="puce" id="plateforme">🖥️ PC</button>
   </div>
 
-  <div class="ligne">
-    <button class="petit" id="moins">−1</button>
-    <button class="petit" id="nouvelle">Nouvelle partie ✓</button>
+  <div class="carte chrono">
+    <div class="temps" id="temps">00:00</div>
+    <div class="chrono-btns">
+      <button class="petit go" id="btnChrono">▶︎ Go</button>
+      <button class="petit" id="btnZero">↺</button>
+    </div>
   </div>
 
-  <button id="micro">🎤 Activer la voix</button>
-  <div id="entendu"></div>
+  <div class="compte">
+    <div class="nb" id="nb">0</div>
+    <div class="lbl">coffres cette partie</div>
+  </div>
+
+  <button class="plus1" id="plus1">+1</button>
+
+  <div class="ligne">
+    <button class="moins" data-n="-1">−1</button>
+    <button data-n="5">+5</button>
+    <button data-n="10">+10</button>
+    <button data-n="20">+20</button>
+  </div>
+
+  <button class="voix" id="voix">🎤 Activer la voix</button>
+  <div class="statut" id="statut"></div>
+
+  <button class="nouvelle" id="nouvelle">✔︎ Nouvelle partie</button>
+
+  <div class="filtre">
+    <button id="fPlateforme" class="actif">Sur PC</button>
+    <button id="fTout">Tout</button>
+  </div>
 
   <div class="stats">
-    <div><b id="moyenne">0</b>Moyenne</div>
-    <div><b id="record">0</b>Record</div>
-    <div><b id="total">0</b>Total</div>
+    <div class="stat"><b id="sParties">0</b><span>parties</span></div>
+    <div class="stat"><b id="sMoyenne">0</b><span>coffres en moyenne</span></div>
+    <div class="stat"><b id="sRecord">0</b><span>record</span></div>
+    <div class="stat"><b id="sRythme">–</b><span>coffres / minute</span></div>
   </div>
 
-  <div id="historique"></div>
-  <button id="reset">Tout effacer</button>
+  <div class="carte histo">
+    <h2>Dernières parties</h2>
+    <ul id="liste"></ul>
+  </div>
+
+  <button class="reset" id="reset">Tout effacer</button>
+</main>
 
 <script>
-  let data = JSON.parse(localStorage.getItem("coffres")) || { actuel: 0, parties: [] };
+  const CLE = 'compteurCoffres';
+  const $ = id => document.getElementById(id);
 
-  function sauver() { localStorage.setItem("coffres", JSON.stringify(data)); }
-
-  function afficher() {
-    const p = data.parties;
-    document.getElementById("compteur").textContent = data.actuel;
-    document.getElementById("partie").textContent = "Partie n°" + (p.length + 1);
-    const total = p.reduce((s, x) => s + x.coffres, 0);
-    document.getElementById("total").textContent = total;
-    document.getElementById("record").textContent = p.length ? Math.max(...p.map(x => x.coffres)) : 0;
-    document.getElementById("moyenne").textContent = p.length ? (total / p.length).toFixed(1) : 0;
-    document.getElementById("historique").innerHTML = p.slice().reverse().slice(0, 20).map((x, i) =>
-      `<div><span>Partie ${p.length - i} · ${x.date}</span><span>${x.coffres} 🧰</span></div>`
-    ).join("");
+  // ---------- Sauvegarde ----------
+  const PLATEFORMES = { pc: { icone: '🖥️', nom: 'PC' }, mobile: { icone: '📱', nom: 'Mobile' }, console: { icone: '🎮', nom: 'Console' } };
+  function vierge() { return { actuel: 0, parties: [], chrono: { debut: null, cumul: 0 }, plateforme: null, filtre: 'plateforme' }; }
+  function normaliser(d) {
+    return {
+      actuel: Number(d.actuel) || 0,
+      parties: d.parties.map(p => typeof p === 'number'
+        ? { coffres: p, duree: 0, plateforme: null }
+        : { coffres: Number(p.coffres) || 0, duree: Number(p.duree) || 0, date: p.date, plateforme: PLATEFORMES[p.plateforme] ? p.plateforme : null }),
+      chrono: (d.chrono && typeof d.chrono.cumul === 'number') ? d.chrono : { debut: null, cumul: 0 },
+      plateforme: PLATEFORMES[d.plateforme] ? d.plateforme : null,
+      filtre: d.filtre === 'tout' ? 'tout' : 'plateforme'
+    };
   }
-
-  function pop() {
-    const c = document.getElementById("compteur");
-    c.classList.add("pop");
-    setTimeout(() => c.classList.remove("pop"), 150);
+  function charger() {
+    for (const k of [CLE, 'coffres', 'compteur-coffres', 'compteur']) {
+      try {
+        const d = JSON.parse(localStorage.getItem(k));
+        if (d && Array.isArray(d.parties)) return normaliser(d);
+      } catch (e) {}
+    }
+    return vierge();
   }
+  let data = charger();
+  function sauver() { try { localStorage.setItem(CLE, JSON.stringify(data)); } catch (e) {} }
 
+  // ---------- Chrono ----------
+  function ecoule() { const c = data.chrono; return c.cumul + (c.debut ? Date.now() - c.debut : 0); }
+  function fmt(ms) {
+    const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    const p = n => String(n).padStart(2, '0');
+    return h ? h + ':' + p(m) + ':' + p(x) : p(m) + ':' + p(x);
+  }
+  function demarrer() { if (!data.chrono.debut) { data.chrono.debut = Date.now(); sauver(); afficher(); } }
+  function pause() { if (data.chrono.debut) { data.chrono.cumul = ecoule(); data.chrono.debut = null; sauver(); afficher(); } }
+  function zero() { data.chrono = { debut: null, cumul: 0 }; sauver(); afficher(); }
+
+  // ---------- Coffres ----------
   function ajouter(n) {
     data.actuel = Math.max(0, data.actuel + n);
-    if (navigator.vibrate) navigator.vibrate(30);
-    sauver(); afficher(); pop();
+    if (n > 0) demarrer(); // le chrono se lance tout seul au premier coffre
+    sauver(); afficher();
+    if (navigator.vibrate) navigator.vibrate(15);
   }
-
   function nouvellePartie() {
-    const d = new Date();
-    data.parties.push({
-      coffres: data.actuel,
-      date: d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-    });
+    const d = ecoule();
+    if (data.actuel === 0 && d < 1000) return;
+    data.parties.push({ coffres: data.actuel, duree: d, date: Date.now(), plateforme: data.plateforme });
     data.actuel = 0;
+    data.chrono = { debut: null, cumul: 0 };
     sauver(); afficher();
   }
 
-  document.getElementById("plus").onclick = () => ajouter(1);
-  document.querySelectorAll(".ajout").forEach(b => {
-    b.onclick = () => ajouter(parseInt(b.dataset.n));
-  });
-  document.getElementById("moins").onclick = () => ajouter(-1);
-  document.getElementById("nouvelle").onclick = nouvellePartie;
+  // ---------- Affichage ----------
+  function afficher() {
+    $('nb').textContent = data.actuel;
+    const enCours = !!data.chrono.debut;
+    $('temps').textContent = fmt(ecoule());
+    $('temps').classList.toggle('actif', enCours);
+    $('btnChrono').textContent = enCours ? '❚❚ Pause' : '▶︎ Go';
+    $('btnChrono').className = 'petit ' + (enCours ? 'pause' : 'go');
 
-  document.getElementById("reset").onclick = () => {
-    if (confirm("Effacer toutes les parties ?")) {
-      data = { actuel: 0, parties: [] };
+    const pf = PLATEFORMES[data.plateforme];
+    $('plateforme').textContent = pf ? pf.icone + ' ' + pf.nom : 'Choisir';
+    $('fPlateforme').textContent = pf ? 'Sur ' + pf.nom : 'Plateforme';
+    $('fPlateforme').classList.toggle('actif', data.filtre !== 'tout');
+    $('fTout').classList.toggle('actif', data.filtre === 'tout');
+
+    const ps = data.filtre === 'tout' ? data.parties : data.parties.filter(p => p.plateforme === data.plateforme);
+    const total = ps.reduce((a, p) => a + p.coffres, 0);
+    $('sParties').textContent = ps.length;
+    $('sMoyenne').textContent = ps.length ? Math.round(total / ps.length) : 0;
+    $('sRecord').textContent = ps.length ? Math.max(...ps.map(p => p.coffres)) : 0;
+    const chronos = ps.filter(p => p.duree > 0);
+    const min = chronos.reduce((a, p) => a + p.duree, 0) / 60000;
+    const cof = chronos.reduce((a, p) => a + p.coffres, 0);
+    $('sRythme').textContent = min > 0 ? (cof / min).toFixed(1) : '–';
+
+    const liste = $('liste');
+    if (!ps.length) { liste.innerHTML = '<li class="vide">Aucune partie pour l\'instant</li>'; return; }
+    liste.innerHTML = ps.map((p, i) => ({ p, i })).slice(-10).reverse().map(({ p, i }) =>
+      '<li>' + (PLATEFORMES[p.plateforme] ? PLATEFORMES[p.plateforme].icone + ' ' : '') + 'Partie ' + (i + 1) +
+      '<span>' + p.coffres + ' coffres' + (p.duree ? ' · ' + fmt(p.duree) : '') + '</span></li>'
+    ).join('');
+  }
+  setInterval(() => { if (data.chrono.debut) $('temps').textContent = fmt(ecoule()); }, 250);
+
+  // ---------- Boutons ----------
+  $('plus1').addEventListener('click', () => ajouter(1));
+  document.querySelectorAll('.ligne button').forEach(b => b.addEventListener('click', () => ajouter(Number(b.dataset.n))));
+  $('btnChrono').addEventListener('click', () => data.chrono.debut ? pause() : demarrer());
+  $('btnZero').addEventListener('click', zero);
+  $('nouvelle').addEventListener('click', nouvellePartie);
+  $('reset').addEventListener('click', () => {
+    if (confirm('Effacer toutes les parties ?')) {
+      const garde = data.plateforme;
+      data = vierge(); data.plateforme = garde;
       sauver(); afficher();
     }
-  };
+  });
 
-  // ===== Nombres en lettres -> chiffres =====
-  const valeurs = {
-    zero: 0, un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9,
-    dix: 10, onze: 11, douze: 12, treize: 13, quatorze: 14, quinze: 15, seize: 16,
-    vingt: 20, vingts: 20, trente: 30, quarante: 40, cinquante: 50, soixante: 60,
-    cent: 100, cents: 100, mille: 1000
-  };
+  // ---------- Choix de la plateforme (à chaque arrivée sur le site) ----------
+  function ouvrirAccueil() {
+    document.querySelectorAll('.choix button').forEach(b => b.classList.toggle('dernier', b.dataset.p === data.plateforme));
+    $('accueil').classList.remove('cache');
+  }
+  document.querySelectorAll('.choix button').forEach(b => b.addEventListener('click', () => {
+    data.plateforme = b.dataset.p;
+    sauver(); afficher();
+    $('accueil').classList.add('cache');
+  }));
+  $('plateforme').addEventListener('click', ouvrirAccueil);
+  $('fPlateforme').addEventListener('click', () => { data.filtre = 'plateforme'; sauver(); afficher(); });
+  $('fTout').addEventListener('click', () => { data.filtre = 'tout'; sauver(); afficher(); });
+  ouvrirAccueil();
 
-  function lireNombre(texte) {
-    texte = texte.trim();
-    if (/^\d+$/.test(texte)) return parseInt(texte);
-    const mots = texte.split(/[\s-]+/).filter(m => m && m !== "et");
-    if (!mots.length) return null;
-    let total = 0, cur = 0;
+  // ---------- Voix ----------
+  const MOTS = { zero: 0, un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, onze: 11, douze: 12, treize: 13, quatorze: 14, quinze: 15, seize: 16, vingt: 20, vingts: 20, trente: 30, quarante: 40, cinquante: 50, soixante: 60, septante: 70, huitante: 80, octante: 80, nonante: 90 };
+  function sansAccents(t) { return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  function lireNombre(txt) {
+    const brut = txt.replace(/\s/g, '');
+    if (/^\d+$/.test(brut)) return parseInt(brut, 10);
+    const mots = txt.split(/[\s-]+/).filter(Boolean);
+    let total = 0, cur = 0, vu = false, prec = null;
     for (const m of mots) {
-      const v = valeurs[m];
-      if (v === undefined) return null;
-      if (v === 1000) { total += (cur || 1) * 1000; cur = 0; }
-      else if (v === 100) { cur = (cur || 1) * 100; }
-      else if (v === 20 && cur % 100 === 4) { cur += 76; }   // quatre-vingt
-      else { cur += v; }
+      if (m === 'et') continue;
+      if (m === 'cent' || m === 'cents') { cur = (cur || 1) * 100; }
+      else if (m === 'mille') { total += (cur || 1) * 1000; cur = 0; }
+      else if (m in MOTS) { if ((m === 'vingt' || m === 'vingts') && prec === 'quatre') cur += 76; else cur += MOTS[m]; }
+      else if (/^\d+$/.test(m)) { cur += parseInt(m, 10); }
+      else return null;
+      vu = true; prec = m;
     }
-    return total + cur;
+    return vu ? total + cur : null;
   }
 
-  // ===== Commandes vocales =====
-  const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const boutonMicro = document.getElementById("micro");
-  const entendu = document.getElementById("entendu");
-  let reco = null, ecoute = false;
-
-  function analyser(texte) {
-    let t = texte.toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/\+\s*(?=\d)/g, " plus ")
-      .replace(/(^|\s)-\s*(?=\d)/g, " moins ");
-    // "plus/moins" + nombre (chiffres ou lettres, jusqu'à 5 mots) + "coffre(s)"
-    const regex = /(plus|moins)\s+([a-z0-9]+(?:[\s-]+[a-z0-9]+){0,4}?)\s+coffres?/g;
+  // Trouve toutes les commandes dans une phrase, dans l'ordre où elles sont dites
+  function extraire(phrase) {
+    const s = sansAccents(phrase);
+    const cmds = [];
     let m;
-    while ((m = regex.exec(t)) !== null) {
+    // « plus 18 coffres », « +1 coffre », « moins deux coffrets »… (coffre/coffret/cofre)
+    const reCoffre = /(?:^|\s)(plus|moins|\+|-)\s*([a-z0-9 -]*?)\s*(?:coffres?|coffrets?|cofres?)(?![a-z])/g;
+    while ((m = reCoffre.exec(s)) !== null) {
       const n = lireNombre(m[2]);
-      if (n === null || n === 0) continue;
-      ajouter(m[1] === "plus" ? n : -n);
-      entendu.textContent = "✅ " + (m[1] === "plus" ? "+" : "−") + n + " coffre" + (n > 1 ? "s" : "");
+      if (n !== null && n > 0 && n < 100000) {
+        const v = (m[1] === 'moins' || m[1] === '-') ? -n : n;
+        cmds.push({ pos: m.index, type: 'n', v, label: (v > 0 ? '+' : '') + v + (Math.abs(v) > 1 ? ' coffres' : ' coffre') });
+      }
     }
-    if (/nouvelle partie/.test(t)) {
-      nouvellePartie();
-      entendu.textContent = "✅ nouvelle partie";
+    const reNp = /nouvelle partie/g;
+    while ((m = reNp.exec(s)) !== null) cmds.push({ pos: m.index, type: 'np', label: 'nouvelle partie' });
+    const reChrono = /(?:(\w+)\s+(?:le\s+|la\s+)?)?chrono(?:metre)?(?:\s+(?:a\s+|en\s+)?(\w+))?/g;
+    while ((m = reChrono.exec(s)) !== null) {
+      const autour = (m[1] || '') + ' ' + (m[2] || '');
+      if (/(zero|reset|remet)/.test(autour)) cmds.push({ pos: m.index, type: 'zero', label: 'chrono à zéro' });
+      else if (/(stop|pause|arrete)/.test(autour)) cmds.push({ pos: m.index, type: 'pause', label: 'chrono en pause' });
+      else if (/(lance|demarre|start|go|reprend)/.test(autour)) cmds.push({ pos: m.index, type: 'go', label: 'chrono lancé' });
     }
+    return cmds.sort((a, b) => a.pos - b.pos);
   }
 
-  function demarrer() {
-    reco = new Reco();
-    reco.lang = "fr-FR";
+  function appliquer(c) {
+    if (c.type === 'n') ajouter(c.v);
+    else if (c.type === 'np') nouvellePartie();
+    else if (c.type === 'zero') zero();
+    else if (c.type === 'pause') pause();
+    else if (c.type === 'go') demarrer();
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let reco = null, ecoute = false, verrou = null;
+
+  async function garderEcran() { try { if ('wakeLock' in navigator) verrou = await navigator.wakeLock.request('screen'); } catch (e) {} }
+  function libererEcran() { try { if (verrou) verrou.release(); } catch (e) {} verrou = null; }
+  document.addEventListener('visibilitychange', () => { if (ecoute && document.visibilityState === 'visible') garderEcran(); });
+
+  function majBoutonVoix() {
+    $('voix').textContent = ecoute ? '🔴 Voix activée (appuie pour couper)' : '🎤 Activer la voix';
+    $('voix').classList.toggle('on', ecoute);
+  }
+
+  if (!SR) {
+    $('voix').textContent = 'Voix non disponible sur ce navigateur';
+    $('voix').disabled = true;
+  } else {
+    reco = new SR();
+    reco.lang = 'fr-FR';
     reco.continuous = true;
-    reco.interimResults = false;
+    // On lit la phrase pendant qu'elle est dite (sans attendre la fin),
+    // et on retient combien de commandes ont déjà été comptées pour ne jamais compter deux fois.
+    reco.interimResults = true;
+    let deja = [];
+    reco.onstart = () => { deja = []; };
     reco.onresult = e => {
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) analyser(e.results[i][0].transcript);
+        const texte = e.results[i][0].transcript;
+        const cmds = extraire(texte);
+        const n = deja[i] || 0;
+        if (cmds.length > n) {
+          const nouvelles = cmds.slice(n);
+          nouvelles.forEach(appliquer);
+          deja[i] = cmds.length;
+          $('statut').textContent = '✅ ' + nouvelles.map(c => c.label).join(', ');
+        } else if (e.results[i].isFinal && cmds.length === 0) {
+          $('statut').textContent = '« ' + texte.trim() + ' » ignoré';
+        }
       }
     };
-    reco.onend = () => { if (ecoute) try { reco.start(); } catch (_) {} };
     reco.onerror = e => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        entendu.textContent = "❌ Micro refusé : autorise-le dans les réglages du navigateur";
-        arreter();
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        ecoute = false; libererEcran(); majBoutonVoix();
+        $('statut').textContent = '⚠️ Micro bloqué : autorise-le pour ce site';
       }
     };
-    reco.start();
-  }
+    reco.onend = () => { if (ecoute) setTimeout(() => { try { reco.start(); } catch (e) {} }, 50); };
 
-  function arreter() {
-    ecoute = false;
-    if (reco) reco.stop();
-    boutonMicro.classList.remove("actif");
-    boutonMicro.textContent = "🎤 Activer la voix";
+    $('voix').addEventListener('click', () => {
+      ecoute = !ecoute;
+      if (ecoute) {
+        try { reco.start(); } catch (e) {}
+        garderEcran();
+        $('statut').textContent = 'Dis « plus 18 coffres », « lance le chrono »…';
+      } else {
+        try { reco.stop(); } catch (e) {}
+        libererEcran();
+        $('statut').textContent = '';
+      }
+      majBoutonVoix();
+    });
   }
-
-  boutonMicro.onclick = () => {
-    if (!Reco) { entendu.textContent = "❌ La voix ne marche pas sur ce navigateur"; return; }
-    if (ecoute) { arreter(); return; }
-    ecoute = true;
-    boutonMicro.classList.add("actif");
-    boutonMicro.textContent = "🔴 J'écoute… (appuie pour arrêter)";
-    entendu.textContent = "Dis « plus 18 coffres »";
-    demarrer();
-  };
 
   afficher();
 </script>
